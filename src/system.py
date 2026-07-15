@@ -27,7 +27,6 @@ class System:
         velocities=np.random.normal(0, np.sqrt(T_star), (self.N, 3))
         velocities -= np.mean(velocities, axis=0)
         self.velocities = velocities
-        self.compute_forces()
     def compute_forces(self):
         forces = np.zeros((self.N, 3))
         potential_energy = 0
