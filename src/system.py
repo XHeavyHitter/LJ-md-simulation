@@ -27,3 +27,23 @@ class System:
         velocities=np.random.normal(0, np.sqrt(T_star), (self.N, 3))
         velocities -= np.mean(velocities, axis=0)
         self.velocities = velocities
+    
+    def compute_forces(self):
+        forces = np.zeros((self.N, 3))
+        potential_energy = 0
+        for i in range(self.N):
+            for j in range(i+1, self.N):
+                displacement_ij = self.positions[i] - self.positions[j]
+                displacement_ij -= np.round(displacement_ij / self.L_star) * self.L_star
+                distance_ij=np.linalg.norm(displacement_ij)
+                if distance_ij<self.r_c:
+                    F_scalar=24/distance_ij*(2*(1/distance_ij)**12-(1/distance_ij)**6)
+                    direction = displacement_ij / distance_ij
+                    F_vector = F_scalar * direction
+                    forces[i] += F_vector
+                    forces[j] -= F_vector
+                    potential_energy += 4*((1/distance_ij)**12 - (1/distance_ij)**6)
+        self.forces=forces
+        self.potential_energy=potential_energy
+        return self.forces, self.potential_energy
+         
