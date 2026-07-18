@@ -53,3 +53,9 @@ class System:
         avg_accelerations = (self.forces + accelerations) / 2
         self.velocities += avg_accelerations * self.dt
         self.positions %= self.L_star
+    def compute_temperature(self):
+        kinetic_energy = 0.5 * np.sum(self.velocities**2)
+        T_inst = (2 * kinetic_energy) / (3 * self.N)
+        self.T_inst = T_inst
+        self.kinetic_energy = kinetic_energy
+        return self.T_inst, self.kinetic_energy
