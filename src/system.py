@@ -24,6 +24,7 @@ class System:
         velocities=np.random.normal(0, np.sqrt(T_star), (self.N, 3))
         velocities -= np.mean(velocities, axis=0)
         self.velocities = velocities
+    
     def compute_forces(self):
         forces = np.zeros((self.N, 3))
         potential_energy = 0
@@ -43,6 +44,7 @@ class System:
         self.forces=forces
         self.potential_energy=potential_energy
         return self.forces, self.potential_energy
+
     def step(self):
         accelerations = self.forces.copy()
         self.positions += self.velocities * self.dt + 0.5 * accelerations * self.dt**2
@@ -50,9 +52,38 @@ class System:
         avg_accelerations = (self.forces + accelerations) / 2
         self.velocities += avg_accelerations * self.dt
         self.positions %= self.L_star
+    
     def compute_temperature(self):
         kinetic_energy = 0.5 * np.sum(self.velocities**2)
         T_inst = (2 * kinetic_energy) / (3 * self.N)
         self.T_inst = T_inst
         self.kinetic_energy = kinetic_energy
         return self.T_inst, self.kinetic_energy
+
+    def run(self, n_production_steps, sample_interval):
+        total_energies=[]
+        temperatures=[]
+        step_count=0
+        equilibration=False
+        while (equilibration == False):
+            self.step()
+            self.compute_forces()
+            self.compute_temperature()
+            self.velocities*=np.sqrt(self.T_star/self.T_inst)
+            total_energies.append(self.kinetic_energy + self.potential_energy)
+            temperatures.append(self.T_inst)
+            step_count+=1
+
+            if (step_count % 1000 == 0 and step_count>=2000):
+                current_1000_temps = temperatures[-1000:]
+                current_temp_1000_avg = np.mean(current_1000_temps)
+                current_1000_enrg = total_energies[-1000:]
+                previous_1000_enrg = total_energies[-2000:-1000]
+                current_enrg_1000_avg = np.mean(current_1000_enrg)
+                previous_enrg_1000_avg = np.mean(previous_1000_enrg)
+                if (abs(current_temp_1000_avg - self.T_star)/self.T_star<0.005 and abs(current_enrg_1000_avg - previous_enrg_1000_avg)/previous_enrg_1000_avg<0.005):
+                    equilibration=True
+                    print(f"Equilibration achieved at step {step_count}.")
+            if (step_count > 20000):
+                print("Equilibration not achieved within 20000 steps.")
+                break
