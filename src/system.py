@@ -1,6 +1,6 @@
 import numpy as np
 class System:
-    def __init__(self, n_cell, rho_star, dt, r_c, T_star):
+    def __init__(self, n_cell, rho_star, dt, r_c, T_star): #creates FCC lattice at target density
         self.n_cell = n_cell
         self.rho_star = rho_star
         self.dt = dt
@@ -24,7 +24,6 @@ class System:
         velocities=np.random.normal(0, np.sqrt(T_star), (self.N, 3))
         velocities -= np.mean(velocities, axis=0)
         self.velocities = velocities
-    
     def compute_forces(self):
         forces = np.zeros((self.N, 3))
         potential_energy = 0
@@ -44,7 +43,6 @@ class System:
         self.forces=forces
         self.potential_energy=potential_energy
         return self.forces, self.potential_energy
-
     def step(self):
         accelerations = self.forces.copy()
         self.positions += self.velocities * self.dt + 0.5 * accelerations * self.dt**2
@@ -52,28 +50,31 @@ class System:
         avg_accelerations = (self.forces + accelerations) / 2
         self.velocities += avg_accelerations * self.dt
         self.positions %= self.L_star
-    
     def compute_temperature(self):
         kinetic_energy = 0.5 * np.sum(self.velocities**2)
         T_inst = (2 * kinetic_energy) / (3 * self.N)
         self.T_inst = T_inst
         self.kinetic_energy = kinetic_energy
         return self.T_inst, self.kinetic_energy
-
     def run(self, n_production_steps, sample_interval):
+        # equilibration variables
         total_energies=[]
         temperatures=[]
         step_count=0
         equilibration=False
+        # production variables
+        n_snapshots = n_production_steps // sample_interval
+        trajectories = np.zeros((n_snapshots, self.N, 3))
+        prod_temps=[]
+        prod_Enrgs=[]
         while (equilibration == False):
             self.step()
             self.compute_forces()
             self.compute_temperature()
-            self.velocities*=np.sqrt(self.T_star/self.T_inst)
+            self.velocities*=np.sqrt(self.T_star/self.T_inst) # isokinetic scaling
             total_energies.append(self.kinetic_energy + self.potential_energy)
             temperatures.append(self.T_inst)
             step_count+=1
-
             if (step_count % 1000 == 0 and step_count>=2000):
                 current_1000_temps = temperatures[-1000:]
                 current_temp_1000_avg = np.mean(current_1000_temps)
@@ -87,3 +88,13 @@ class System:
             if (step_count > 20000):
                 print("Equilibration not achieved within 20000 steps.")
                 break
+        for i in range(n_production_steps):
+            self.step()
+            self.compute_forces()
+            self.compute_temperature()
+            if (i % sample_interval == 0):
+                slot = i // sample_interval
+                trajectories[slot] = self.positions.copy()
+                prod_temps.append(self.T_inst)
+                prod_Enrgs.append(self.kinetic_energy+self.potential_energy)
+        return trajectories, prod_temps, prod_Enrgs
