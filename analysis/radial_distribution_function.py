@@ -2,6 +2,7 @@ import numpy as np
 def rdf(trajectories, L_star, n_blocks=8, bin_width=1/50, max_radius=None):
     if max_radius is None:
         max_radius = L_star / 2
+    trajectories = trajectories % L_star # PBC applied
     N=trajectories.shape[1]
     rho_star=N/L_star**3
     bins=int(max_radius/bin_width)

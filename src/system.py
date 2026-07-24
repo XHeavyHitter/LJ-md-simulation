@@ -21,6 +21,7 @@ class System:
                         z = corner[2] + offset[2]*a
                         positions_list.append((x, y, z))
         self.positions = np.array(positions_list)
+        self.pure_positions=self.positions.copy()
         velocities=np.random.normal(0, np.sqrt(T_star), (self.N, 3))
         velocities -= np.mean(velocities, axis=0)
         self.velocities = velocities
@@ -30,7 +31,7 @@ class System:
         U_shift = 4*((1/self.r_c)**12 - (1/self.r_c)**6)
         for i in range(self.N):
             for j in range(i+1, self.N):
-                displacement_ij = self.positions[i] - self.positions[j]
+                displacement_ij = self.positions[i] - self.positions[j] # displacement vector between two particles in the same frame
                 displacement_ij -= np.round(displacement_ij / self.L_star) * self.L_star
                 distance_ij=np.linalg.norm(displacement_ij)
                 if distance_ij<self.r_c:
@@ -46,6 +47,7 @@ class System:
     def step(self):
         accelerations = self.forces.copy()
         self.positions += self.velocities * self.dt + 0.5 * accelerations * self.dt**2
+        self.pure_positions+=self.velocities * self.dt + 0.5 * accelerations * self.dt**2
         self.compute_forces()
         avg_accelerations = (self.forces + accelerations) / 2
         self.velocities += avg_accelerations * self.dt
