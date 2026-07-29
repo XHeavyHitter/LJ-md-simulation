@@ -21,18 +21,17 @@ class System:
                         z = corner[2] + offset[2]*a
                         positions_list.append((x, y, z))
         self.positions = np.array(positions_list)
-        self.pure_positions=self.positions.copy()
         velocities=np.random.normal(0, np.sqrt(T_star), (self.N, 3))
         velocities -= np.mean(velocities, axis=0)
         self.velocities = velocities
-    def compute_forces(self):
+    def compute_forces_v1(self):
         forces = np.zeros((self.N, 3))
         potential_energy = 0
         U_shift = 4*((1/self.r_c)**12 - (1/self.r_c)**6)
         for i in range(self.N):
             for j in range(i+1, self.N):
                 displacement_ij = self.positions[i] - self.positions[j] # displacement vector between two particles in the same frame
-                displacement_ij -= np.round(displacement_ij / self.L_star) * self.L_star
+                displacement_ij -= np.round(displacement_ij / self.L_star) * self.L_star #applying PBC
                 distance_ij=np.linalg.norm(displacement_ij)
                 if distance_ij<self.r_c:
                     F_scalar=24/distance_ij*(2*(1/distance_ij)**12-(1/distance_ij)**6)
@@ -44,14 +43,31 @@ class System:
         self.forces=forces
         self.potential_energy=potential_energy
         return self.forces, self.potential_energy
+    def compute_forces_v2(self):
+        displacement_ij=self.positions[:, np.newaxis, :]-self.positions[np.newaxis, :, :]
+        displacement_ij -= np.round(displacement_ij / self.L_star) * self.L_star #applying PBC
+        distance_ij=np.linalg.norm(displacement_ij, axis=2)
+        np.fill_diagonal(distance_ij, np.inf) # makes the diagonal equal to infinities - when values are used, the results are 0
+        relevant_pairs=distance_ij<self.r_c
+        F_scalar=24/distance_ij*(2*(1/distance_ij)**12-(1/distance_ij)**6)
+        F_scalar=F_scalar*relevant_pairs
+        direction=displacement_ij/distance_ij[:, :, np.newaxis]
+        F_vector = F_scalar[:, :, np.newaxis] * direction
+        forces = F_vector.sum(axis=1)
+        U_shift = 4*((1/self.r_c)**12 - (1/self.r_c)**6)
+        pair_energy = 4*((1/distance_ij)**12 - (1/distance_ij)**6) - U_shift
+        pair_energy = pair_energy * relevant_pairs
+        i_upper, j_upper = np.triu_indices(self.N, k=1)
+        potential_energy = pair_energy[i_upper, j_upper].sum()
+        self.forces = forces
+        self.potential_energy = potential_energy
+        return self.forces, self.potential_energy
     def step(self):
         accelerations = self.forces.copy()
         self.positions += self.velocities * self.dt + 0.5 * accelerations * self.dt**2
-        self.pure_positions+=self.velocities * self.dt + 0.5 * accelerations * self.dt**2
         self.compute_forces()
         avg_accelerations = (self.forces + accelerations) / 2
         self.velocities += avg_accelerations * self.dt
-        self.positions %= self.L_star
     def compute_temperature(self):
         kinetic_energy = 0.5 * np.sum(self.velocities**2)
         T_inst = (2 * kinetic_energy) / (3 * self.N)
@@ -69,7 +85,7 @@ class System:
         trajectories = np.zeros((n_snapshots, self.N, 3))
         prod_temps=[]
         prod_Enrgs=[]
-        while (equilibration == False):
+        while (equilibration == False): # equilibration loop
             self.step()
             self.compute_forces()
             self.compute_temperature()
@@ -90,7 +106,7 @@ class System:
             if (step_count > 20000):
                 print("Equilibration not achieved within 20000 steps.")
                 break
-        for i in range(n_production_steps):
+        for i in range(n_production_steps): # production loop
             self.step()
             self.compute_forces()
             self.compute_temperature()
