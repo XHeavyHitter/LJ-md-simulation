@@ -8,7 +8,7 @@ from system import System
 @pytest.fixture(scope="module")
 def conservation_data():
     s = System(n_cell=2, rho_star=0.844, dt=0.0001, r_c=2.5, T_star=0.71)
-    s.compute_forces()
+    s.compute_forces_v3()
     total_energy = []
     momentum = []
     for i in range(1000):

@@ -1,4 +1,5 @@
 import numpy as np
+import itertools
 class System:
     def __init__(self, n_cell, rho_star, dt, r_c, T_star): #creates FCC lattice at target density
         self.n_cell = n_cell
@@ -24,7 +25,7 @@ class System:
         velocities=np.random.normal(0, np.sqrt(T_star), (self.N, 3))
         velocities -= np.mean(velocities, axis=0)
         self.velocities = velocities
-    def compute_forces_v1(self):
+    def compute_forces_v1(self): # Base method
         forces = np.zeros((self.N, 3))
         potential_energy = 0
         U_shift = 4*((1/self.r_c)**12 - (1/self.r_c)**6)
@@ -43,29 +44,92 @@ class System:
         self.forces=forces
         self.potential_energy=potential_energy
         return self.forces, self.potential_energy
-    def compute_forces_v2(self):
-        displacement_ij=self.positions[:, np.newaxis, :]-self.positions[np.newaxis, :, :]
-        displacement_ij -= np.round(displacement_ij / self.L_star) * self.L_star #applying PBC
-        distance_ij=np.linalg.norm(displacement_ij, axis=2)
-        np.fill_diagonal(distance_ij, np.inf) # makes the diagonal equal to infinities - when values are used, the results are 0
-        relevant_pairs=distance_ij<self.r_c
-        F_scalar=24/distance_ij*(2*(1/distance_ij)**12-(1/distance_ij)**6)
-        F_scalar=F_scalar*relevant_pairs
-        direction=displacement_ij/distance_ij[:, :, np.newaxis]
-        F_vector = F_scalar[:, :, np.newaxis] * direction
-        forces = F_vector.sum(axis=1)
-        U_shift = 4*((1/self.r_c)**12 - (1/self.r_c)**6)
-        pair_energy = 4*((1/distance_ij)**12 - (1/distance_ij)**6) - U_shift
-        pair_energy = pair_energy * relevant_pairs
-        i_upper, j_upper = np.triu_indices(self.N, k=1)
-        potential_energy = pair_energy[i_upper, j_upper].sum()
-        self.forces = forces
-        self.potential_energy = potential_energy
-        return self.forces, self.potential_energy
+    def compute_forces_v2(self): # Vectorized
+         # Force calculation logic
+         displacement_ij=self.positions[:, np.newaxis, :]-self.positions[np.newaxis, :, :]
+         displacement_ij -= np.round(displacement_ij / self.L_star) * self.L_star #applying PBC
+         distance_ij=np.linalg.norm(displacement_ij, axis=2)
+         np.fill_diagonal(distance_ij, np.inf) # makes the diagonal equal to infinities - when values are used, the results are 0
+         relevant_pairs=distance_ij<self.r_c
+         F_scalar=24/distance_ij*(2*(1/distance_ij)**12-(1/distance_ij)**6)
+         F_scalar=F_scalar*relevant_pairs
+         direction=displacement_ij/distance_ij[:, :, np.newaxis]
+         F_vector = F_scalar[:, :, np.newaxis] * direction
+         forces = F_vector.sum(axis=1)
+         U_shift = 4*((1/self.r_c)**12 - (1/self.r_c)**6)
+         pair_energy = 4*((1/distance_ij)**12 - (1/distance_ij)**6) - U_shift
+         pair_energy = pair_energy * relevant_pairs
+         i_upper, j_upper = np.triu_indices(self.N, k=1)
+         potential_energy = pair_energy[i_upper, j_upper].sum()
+         self.forces = forces
+         self.potential_energy = potential_energy
+         return self.forces, self.potential_energy
+    def compute_forces_v3(self): # Vectorized with cell lists
+         # Cell grid
+         n_cells_per_dim = int(self.L_star / self.r_c)
+         if n_cells_per_dim <= 0:
+             n_cells_per_dim = 1
+         actual_cell_length = self.L_star / n_cells_per_dim
+         cell_indexes = np.array(self.positions / actual_cell_length, dtype=int)
+         cell_atoms = {}
+         for atom_index in range(self.N):
+            cell = tuple(cell_indexes[atom_index])  
+            if cell not in cell_atoms:
+                cell_atoms[cell] = []
+            cell_atoms[cell].append(atom_index)
+         # Checking logic (self + 13 forward, avoids double-counting cell-pairs)
+         neighbor_offsets = []
+         for offset in itertools.product([-1, 0, 1], repeat=3): # Creates a list of all possible offsets for neighboring cells in 3D
+            if offset >= (0, 0, 0):
+                neighbor_offsets.append(offset)
+         # Force calculation logic
+         forces = np.zeros((self.N, 3))
+         potential_energy = 0
+         for cell in cell_atoms:
+            atoms_in_cell = cell_atoms[cell]
+            seen_neighbors = set()
+            U_shift = 4*((1/self.r_c)**12 - (1/self.r_c)**6) # Softener for potential energy
+            for offset in neighbor_offsets:
+                neighbor_cell = tuple((np.array(cell) + np.array(offset)) % n_cells_per_dim)
+                if neighbor_cell in seen_neighbors:
+                    continue
+                seen_neighbors.add(neighbor_cell)
+                atoms_in_neighbor = cell_atoms.get(neighbor_cell, [])
+                if len(atoms_in_neighbor) == 0:
+                    continue  # Nothing in this neighbor cell, skip
+                positions_in_cell = self.positions[atoms_in_cell]
+                positions_in_neighbor = self.positions[atoms_in_neighbor]
+                displacement_ij = positions_in_cell[:, np.newaxis, :] - positions_in_neighbor[np.newaxis, :, :]
+                displacement_ij -= np.round(displacement_ij / self.L_star) * self.L_star #applying PBC
+                distance_ij = np.linalg.norm(displacement_ij, axis=2)
+                if neighbor_cell == cell:
+                    np.fill_diagonal(distance_ij, np.inf) # Avoid atom-vs-itself
+                relevant_pairs=distance_ij<self.r_c
+                F_scalar=24/distance_ij*(2*(1/distance_ij)**12-(1/distance_ij)**6)
+                F_scalar=F_scalar*relevant_pairs
+                direction=displacement_ij/distance_ij[:, :, np.newaxis]
+                F_vector = F_scalar[:, :, np.newaxis] * direction
+                pair_forces = F_vector.sum(axis=1)
+                if cell == neighbor_cell:
+                    forces[atoms_in_cell] += pair_forces
+                else:
+                    forces[atoms_in_cell] += pair_forces
+                    neighbor_forces = -F_vector.sum(axis=0)
+                    forces[atoms_in_neighbor] += neighbor_forces
+                # Potential energy calculation
+                pair_energy = 4*((1/distance_ij)**12 - (1/distance_ij)**6) - U_shift
+                pair_energy = pair_energy * relevant_pairs
+                if cell == neighbor_cell:
+                    potential_energy += pair_energy.sum() / 2
+                else:
+                    potential_energy += pair_energy.sum()
+         self.forces = forces
+         self.potential_energy = potential_energy
+         return self.forces, self.potential_energy
     def step(self):
         accelerations = self.forces.copy()
         self.positions += self.velocities * self.dt + 0.5 * accelerations * self.dt**2
-        self.compute_forces()
+        self.compute_forces_v3()
         avg_accelerations = (self.forces + accelerations) / 2
         self.velocities += avg_accelerations * self.dt
     def compute_temperature(self):
@@ -75,6 +139,7 @@ class System:
         self.kinetic_energy = kinetic_energy
         return self.T_inst, self.kinetic_energy
     def run(self, n_production_steps, sample_interval):
+        self.compute_forces_v3() # initial force calculation
         # equilibration variables
         total_energies=[]
         temperatures=[]
@@ -87,7 +152,6 @@ class System:
         prod_Enrgs=[]
         while (equilibration == False): # equilibration loop
             self.step()
-            self.compute_forces()
             self.compute_temperature()
             self.velocities*=np.sqrt(self.T_star/self.T_inst) # isokinetic scaling
             total_energies.append(self.kinetic_energy + self.potential_energy)
@@ -108,7 +172,6 @@ class System:
                 break
         for i in range(n_production_steps): # production loop
             self.step()
-            self.compute_forces()
             self.compute_temperature()
             if (i % sample_interval == 0):
                 slot = i // sample_interval
