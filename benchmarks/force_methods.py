@@ -22,10 +22,15 @@ def compare_force_methods(n_cell_list, n_repeats):
             end=perf_counter()
             times_v2.append(end-start)
         times_v2=min(times_v2)
-        difference = times_v1 - times_v2
-        results.append((n_cell, s.N, times_v1, times_v2, difference))
+        times_v3=[]
+        for repeat in range(n_repeats):
+            start=perf_counter()
+            s.compute_forces_v3()
+            end=perf_counter()
+            times_v3.append(end-start)
+        times_v3=min(times_v3)
+        difference12=abs(times_v1-times_v2)
+        difference13=abs(times_v1-times_v3)
+        difference23=abs(times_v2-times_v3)
+        results.append((n_cell, s.N, times_v1, times_v2, times_v3, difference12, difference13, difference23))
     return results
-
-results = compare_force_methods([2,3,4,5,6,7], 5)
-for r in results:
-    print(r)
