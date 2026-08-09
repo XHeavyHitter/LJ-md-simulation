@@ -9,7 +9,7 @@ class System:
         self.T_star = T_star
         self.N = 4 * n_cell**3
         self.L_star = (self.N / rho_star)**(1/3)
-        offsets=[(0, 0, 0), (0.5, 0.5, 0), (0.5, 0, 0.5), (0, 0.5, 0.5)]
+        offsets=[(0, 0, 0), (0.5, 0.5, 0), (0.5, 0, 0.5), (0, 0.5, 0.5)] # In FCC lattice, each unit cell has 4 atoms at these fractional coordinates
         a=self.L_star/self.n_cell
         positions_list=[]
         for i in range(self.n_cell):
@@ -22,7 +22,7 @@ class System:
                         z = corner[2] + offset[2]*a
                         positions_list.append((x, y, z))
         self.positions = np.array(positions_list)
-        velocities=np.random.normal(0, np.sqrt(T_star), (self.N, 3))
+        velocities=np.random.normal(0, np.sqrt(T_star), (self.N, 3)) # Velocity components are drawn from a normal distribution with mean 0 and std sqrt(T_star), net following the Maxwell-Boltzmann distribution.
         velocities -= np.mean(velocities, axis=0)
         self.velocities = velocities
     def compute_forces_v1(self): # Base method
@@ -49,7 +49,7 @@ class System:
          displacement_ij=self.positions[:, np.newaxis, :]-self.positions[np.newaxis, :, :]
          displacement_ij -= np.round(displacement_ij / self.L_star) * self.L_star #applying PBC
          distance_ij=np.linalg.norm(displacement_ij, axis=2)
-         np.fill_diagonal(distance_ij, np.inf) # makes the diagonal equal to infinities - when values are used, the results are 0
+         np.fill_diagonal(distance_ij, np.inf) # Makes the diagonal equal to infinities - when values are used, the results are 0
          relevant_pairs=distance_ij<self.r_c
          F_scalar=24/distance_ij*(2*(1/distance_ij)**12-(1/distance_ij)**6)
          F_scalar=F_scalar*relevant_pairs
@@ -59,15 +59,15 @@ class System:
          U_shift = 4*((1/self.r_c)**12 - (1/self.r_c)**6)
          pair_energy = 4*((1/distance_ij)**12 - (1/distance_ij)**6) - U_shift
          pair_energy = pair_energy * relevant_pairs
-         i_upper, j_upper = np.triu_indices(self.N, k=1)
+         i_upper, j_upper = np.triu_indices(self.N, k=1) # The full array double counts every pair and is symmetric
          potential_energy = pair_energy[i_upper, j_upper].sum()
          self.forces = forces
          self.potential_energy = potential_energy
          return self.forces, self.potential_energy
-    def compute_forces_v3(self): # Vectorized with cell lists
+    def compute_forces_v3(self): # Cell lists
          # Cell grid
          n_cells_per_dim = int(self.L_star / self.r_c)
-         if n_cells_per_dim <= 0:
+         if n_cells_per_dim <= 0: # Guards against the case where the cutoff radius is larger than the box length.
              n_cells_per_dim = 1
          actual_cell_length = self.L_star / n_cells_per_dim
          cell_indexes = np.array(self.positions / actual_cell_length, dtype=int)
@@ -77,7 +77,7 @@ class System:
             if cell not in cell_atoms:
                 cell_atoms[cell] = []
             cell_atoms[cell].append(atom_index)
-         # Checking logic (self + 13 forward, avoids double-counting cell-pairs)
+         # Checking logic (self + 13 forward, avoids double-counting cell-pairs, Newton's third law)
          neighbor_offsets = []
          for offset in itertools.product([-1, 0, 1], repeat=3): # Creates a list of all possible offsets for neighboring cells in 3D
             if offset >= (0, 0, 0):
@@ -87,11 +87,11 @@ class System:
          potential_energy = 0
          for cell in cell_atoms:
             atoms_in_cell = cell_atoms[cell]
-            seen_neighbors = set()
+            seen_neighbors = set() 
             U_shift = 4*((1/self.r_c)**12 - (1/self.r_c)**6) # Softener for potential energy
             for offset in neighbor_offsets:
                 neighbor_cell = tuple((np.array(cell) + np.array(offset)) % n_cells_per_dim)
-                if neighbor_cell in seen_neighbors:
+                if neighbor_cell in seen_neighbors: # Guards against small grids, when multiple cells overlap
                     continue
                 seen_neighbors.add(neighbor_cell)
                 atoms_in_neighbor = cell_atoms.get(neighbor_cell, [])
@@ -103,7 +103,7 @@ class System:
                 displacement_ij -= np.round(displacement_ij / self.L_star) * self.L_star #applying PBC
                 distance_ij = np.linalg.norm(displacement_ij, axis=2)
                 if neighbor_cell == cell:
-                    np.fill_diagonal(distance_ij, np.inf) # Avoid atom-vs-itself
+                    np.fill_diagonal(distance_ij, np.inf) # Avoids double coounting for the same cell, samke logic as in v2
                 relevant_pairs=distance_ij<self.r_c
                 F_scalar=24/distance_ij*(2*(1/distance_ij)**12-(1/distance_ij)**6)
                 F_scalar=F_scalar*relevant_pairs
@@ -139,21 +139,21 @@ class System:
         self.kinetic_energy = kinetic_energy
         return self.T_inst, self.kinetic_energy
     def run(self, n_production_steps, sample_interval):
-        self.compute_forces_v3() # initial force calculation
-        # equilibration variables
+        self.compute_forces_v3() # Initial force calculation
+        # Equilibration variables
         total_energies=[]
         temperatures=[]
         step_count=0
         equilibration=False
-        # production variables
+        # Production variables
         n_snapshots = n_production_steps // sample_interval
         trajectories = np.zeros((n_snapshots, self.N, 3))
         prod_temps=[]
         prod_Enrgs=[]
-        while (equilibration == False): # equilibration loop
+        while (equilibration == False): # Equilibration loop; total energy and temperature have to stabilize
             self.step()
             self.compute_temperature()
-            self.velocities*=np.sqrt(self.T_star/self.T_inst) # isokinetic scaling
+            self.velocities*=np.sqrt(self.T_star/self.T_inst) # Isokinetic scaling
             total_energies.append(self.kinetic_energy + self.potential_energy)
             temperatures.append(self.T_inst)
             step_count+=1
@@ -170,7 +170,7 @@ class System:
             if (step_count > 20000):
                 print("Equilibration not achieved within 20000 steps.")
                 break
-        for i in range(n_production_steps): # production loop
+        for i in range(n_production_steps): # Production loop
             self.step()
             self.compute_temperature()
             if (i % sample_interval == 0):
