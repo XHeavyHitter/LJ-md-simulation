@@ -139,6 +139,8 @@ class System:
         self.kinetic_energy = kinetic_energy
         return self.T_inst, self.kinetic_energy
     def run(self, n_production_steps, sample_interval):
+        self.n_production_steps = n_production_steps
+        self.sample_interval = sample_interval
         self.compute_forces_v3() # Initial force calculation
         # Equilibration variables
         total_energies=[]
@@ -181,4 +183,7 @@ class System:
         self.trajectories = trajectories
         self.prod_temps = prod_temps
         self.prod_Enrgs = prod_Enrgs
-        return self.trajectories, self.prod_temps, self.prod_Enrgs
+        self.total_energies = total_energies
+        self.temperatures = temperatures
+        self.step_count = step_count
+        return self.trajectories, self.prod_temps, self.prod_Enrgs, self.total_energies, self.temperatures, self.step_count
