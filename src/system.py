@@ -70,7 +70,7 @@ class System:
          if n_cells_per_dim <= 0: # Guards against the case where the cutoff radius is larger than the box length.
              n_cells_per_dim = 1
          actual_cell_length = self.L_star / n_cells_per_dim
-         cell_indexes = np.array(self.positions / actual_cell_length, dtype=int)
+         cell_indexes = np.array((self.positions % self.L_star) / actual_cell_length, dtype=int) # PBC is also applied to cell indexes
          cell_atoms = {}
          for atom_index in range(self.N):
             cell = tuple(cell_indexes[atom_index])  
@@ -164,7 +164,7 @@ class System:
                 previous_1000_enrg = total_energies[-2000:-1000]
                 current_enrg_1000_avg = np.mean(current_1000_enrg)
                 previous_enrg_1000_avg = np.mean(previous_1000_enrg)
-                if (abs(current_temp_1000_avg - self.T_star)/self.T_star<0.005 and abs(current_enrg_1000_avg - previous_enrg_1000_avg)/previous_enrg_1000_avg<0.005):
+                if abs(current_temp_1000_avg - self.T_star)/self.T_star<0.005 and abs((current_enrg_1000_avg - previous_enrg_1000_avg)/previous_enrg_1000_avg)<0.005:
                     equilibration=True
                     print(f"Equilibration achieved at step {step_count}.")
             if (step_count > 20000):
@@ -178,4 +178,7 @@ class System:
                 trajectories[slot] = self.positions.copy()
                 prod_temps.append(self.T_inst)
                 prod_Enrgs.append(self.kinetic_energy+self.potential_energy)
-        return trajectories, prod_temps, prod_Enrgs
+        self.trajectories = trajectories
+        self.prod_temps = prod_temps
+        self.prod_Enrgs = prod_Enrgs
+        return self.trajectories, self.prod_temps, self.prod_Enrgs

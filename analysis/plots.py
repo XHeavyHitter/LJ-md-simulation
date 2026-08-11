@@ -15,6 +15,21 @@ def energy_vs_time (total_energies, prod_Enrg, step_count, sample_interval, dt):
     plt.savefig('results/energy_vs_time.png')
     plt.show()
     plt.figure()
+def temperature_vs_time (temperatures, prod_temps, step_count, sample_interval, dt):
+    equilibration_times = np.arange(len(temperatures)) * dt
+    production_times = step_count * dt + np.arange(len(prod_temps)) * sample_interval * dt
+    time = np.concatenate([equilibration_times, production_times])
+    Temps = temperatures + prod_temps
+    plt.plot(time, Temps)
+    plt.title("Temperature vs time")
+    plt.xlabel("Time")
+    plt.ylabel("Temperature")
+    equilibration_t = step_count * dt
+    plt.vlines(equilibration_t, ymin=min(Temps), ymax=max(Temps), colors='red', linestyles='dashed', label='Equilibration end')
+    plt.legend()
+    plt.savefig('results/temperature_vs_time.png')
+    plt.show()
+    plt.figure()
 def rdf_plot (r_values, mean_g, std_g):
     plt.errorbar(r_values, mean_g, yerr=std_g, fmt='-')
     plt.title("Radial distribution function")
