@@ -54,7 +54,8 @@ def benchmark_plot(results):
     plt.savefig('results/force_methods_benchmark.png')
 def benchmark_table(results):
     plt.figure()
+    plt.axis('off')
     table_data = [[r[1], r[5], r[6], r[7]] for r in results]
     column_labels = ["N", "v1-v2 diff", "v1-v3 diff", "v2-v3 diff"]
-    plt.table(cellText=table_data, colLabels=column_labels, loc='bottom')
+    plt.table(cellText=table_data, colLabels=column_labels, loc='center')
     plt.savefig('results/force_methods_benchmark_table.png')
