@@ -11,9 +11,9 @@ def rdf(trajectories, L_star, n_blocks=8, bin_width=1/50, max_radius=None):
     r_low = bin_edges[:-1]   # all edges except the last — the "low" side of each bin
     r_high = bin_edges[1:]   # all edges except the first — the "high" side of each bin
     V_shell = (4/3) * np.pi * (r_high**3 - r_low**3)
-    all_block_g = []
+    all_block_g = [] # holds the g(r) for each block
     for block in blocks:
-        block_histogram = np.zeros(bins)
+        block_histogram = np.zeros(bins) # how many particle pairs fall in each bin, summed across all snapshots in this block
         for snapshot in block:
             diff=snapshot[np.newaxis, :, :]-snapshot[:, np.newaxis, :]
             diff=diff-L_star*np.round(diff/L_star) #Applying the minimum image convention
@@ -21,8 +21,9 @@ def rdf(trajectories, L_star, n_blocks=8, bin_width=1/50, max_radius=None):
             i_upper, j_upper = np.triu_indices(N, k=1)  # k=1 skips the diagonal
             unique_distances = distances[i_upper, j_upper]  # 1D array of unique pairwise distances
             counts, _ = np.histogram(unique_distances, bins=bin_edges)
+            counts/=len(block) # average over snapshots in the block
             block_histogram += counts
-        normalised_g=block_histogram/(rho_star*V_shell) #divided by expected count in a uniform gas
+        normalised_g=block_histogram/(N*rho_star*V_shell/2) #divided by expected count in a uniform gas
         all_block_g.append(normalised_g)
     all_block_g = np.array(all_block_g)  # shape (n_blocks, bins)
     mean_g = np.mean(all_block_g, axis=0)
