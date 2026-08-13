@@ -21,6 +21,7 @@ def rdf(trajectories, L_star, n_blocks=8, bin_width=1/50, max_radius=None):
             i_upper, j_upper = np.triu_indices(N, k=1)  # k=1 skips the diagonal
             unique_distances = distances[i_upper, j_upper]  # 1D array of unique pairwise distances
             counts, _ = np.histogram(unique_distances, bins=bin_edges)
+            counts = counts.astype(float)  # convert to float for division
             counts/=len(block) # average over snapshots in the block
             block_histogram += counts
         normalised_g=block_histogram/(N*rho_star*V_shell/2) #divided by expected count in a uniform gas
