@@ -16,7 +16,7 @@ def energy_vs_time (total_energies, prod_Enrg, step_count, sample_interval, dt):
     plt.savefig('results/energy_vs_time.png')
 def energy_vs_time_production (prod_Enrg, step_count, sample_interval, dt):
     plt.figure()
-    t_val=step_count*dt
+    t_val=step_count * dt + np.arange(len(prod_Enrg)) * sample_interval * dt
     plt.plot(t_val, prod_Enrg)
     plt.title("Total energy vs time (production phase)")
     plt.xlabel("t*")

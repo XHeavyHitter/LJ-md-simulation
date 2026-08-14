@@ -19,4 +19,4 @@ with open('results/simulation_summary.txt', 'w') as f:
     f.write(f"Diffusion coefficient D: {D}\n")
     f.write("\n")
     f.write(f"RDF first peak position r*: {r_peak1}\n")
-    f.write(f"RDF first peak height g(r*): {g_peak1} +/- {g_peak1_std}\n")
+    f.write(f"RDF first peak height g(r*): {g_peak1} +/- {g_peak1_std}")
