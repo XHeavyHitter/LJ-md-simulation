@@ -8,12 +8,20 @@ def energy_vs_time (total_energies, prod_Enrg, step_count, sample_interval, dt):
     Energies = total_energies + prod_Enrg
     plt.plot(time, Energies)
     plt.title("Total energy vs time")
-    plt.xlabel("Time")
-    plt.ylabel("Total energy")
+    plt.xlabel("t*")
+    plt.ylabel("U*")
     equilibration_t = step_count * dt
     plt.vlines(equilibration_t, ymin=min(Energies), ymax=max(Energies), colors='red', linestyles='dashed', label='Equilibration end')
     plt.legend()
     plt.savefig('results/energy_vs_time.png')
+def energy_vs_time_production (prod_Enrg, step_count, sample_interval, dt):
+    plt.figure()
+    t_val=step_count*dt
+    plt.plot(t_val, prod_Enrg)
+    plt.title("Total energy vs time (production phase)")
+    plt.xlabel("t*")
+    plt.ylabel("U*")
+    plt.savefig('results/energy_vs_time_production.png')
 def temperature_vs_time (temperatures, prod_temps, step_count, sample_interval, dt):
     plt.figure()
     equilibration_times = np.arange(len(temperatures)) * dt
@@ -22,8 +30,8 @@ def temperature_vs_time (temperatures, prod_temps, step_count, sample_interval, 
     Temps = temperatures + prod_temps
     plt.plot(time, Temps)
     plt.title("Temperature vs time")
-    plt.xlabel("Time")
-    plt.ylabel("Temperature")
+    plt.xlabel("t*")
+    plt.ylabel("T*")
     equilibration_t = step_count * dt
     plt.vlines(equilibration_t, ymin=min(Temps), ymax=max(Temps), colors='red', linestyles='dashed', label='Equilibration end')
     plt.legend()

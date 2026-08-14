@@ -30,4 +30,8 @@ def rdf(trajectories, L_star, n_blocks=8, bin_width=1/50, max_radius=None):
     mean_g = np.mean(all_block_g, axis=0)
     std_g = np.std(all_block_g, axis=0)
     r_values = (bin_edges[:-1] + bin_edges[1:]) / 2
-    return r_values, mean_g, std_g
+    peak_index = np.argmax(mean_g)
+    r_peak1 = r_values[peak_index]
+    g_peak1 = mean_g[peak_index]
+    g_peak1_std = std_g[peak_index]
+    return r_values, mean_g, std_g, r_peak1, g_peak1, g_peak1_std
