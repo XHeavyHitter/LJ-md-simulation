@@ -1,0 +1,4 @@
+Diffusion coefficient D: 0.0257566699120455
+
+RDF first peak position r*: 1.0950385448376392
+RDF first peak height g(r*): 2.9997523975194214 +/- 0.060768409381591455Mean temperature: 0.7043170811606221 +/- 0.018665899304143804
