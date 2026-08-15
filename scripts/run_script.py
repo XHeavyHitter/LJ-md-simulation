@@ -1,5 +1,6 @@
 import sys
 import os
+import numpy as np
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'analysis'))
 from system import System
@@ -20,3 +21,4 @@ with open('results/simulation_summary.txt', 'w') as f:
     f.write("\n")
     f.write(f"RDF first peak position r*: {r_peak1}\n")
     f.write(f"RDF first peak height g(r*): {g_peak1} +/- {g_peak1_std}")
+    f.write(f"Mean temperature: {np.mean(prod_temps)} +/- {np.std(prod_temps)}")
