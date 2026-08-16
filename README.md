@@ -13,15 +13,15 @@ $$F(r)=\frac{24\epsilon}{r}\left[2\left(\frac{\sigma}{r}\right)^{12}-\left(\frac
 
 Full derivation: [fundamentals.2_particle_test.ipynb](notebooks/fundamentals.2_particle_test.ipynb)
 ## Results
-Radial distribution function of a Lennard-Jones fluid was validated near the triple point ($\rho*=0.844$, $T*=0.71$, $N=500$).
+Radial distribution function of a Lennard-Jones fluid was validated near the triple point ($\rho^*=0.844$, $T^*=0.71$, $N=500$).
 
 ![rdf_plot.png](results/rdf_plot.png)
 
-The obtained plot qualitatively matches the ones in Frenkel and Smit's textbook, and Rahman's paper. The first RDF peak has a value $g(r^*)=3.00\pm 0.06$, $r^*=1.10$. Because Rahman's paper and Frenkel and Smit's textbook compute their respective plots using slightly different parameters, the comparison between obtained values and literature values, in this case, is unfair. Nevertheles, since the obtained values are in the ballpark of the literature ones and as all of the parameters are considered to be in the triple point region, it can be concluded that the obtained $g(r^*)$ is correct. The obtained diffusion constant ($D^*$) is also within the comparable order of magnitude of the one that is obtained in Rahman's paper. After numerous runs the obtained value is $D^*=0.021\pm 0.004$. 
+The obtained plot qualitatively matches the ones in Frenkel and Smit's textbook, and Rahman's paper. The first RDF peak has a value $g(r^*)=3.00\pm 0.06 r^*=1.10$. Because Rahman's paper and Frenkel and Smit's textbook compute their respective plots using slightly different parameters, the comparison between obtained values and literature values, in this case, is unfair. Nevertheles, since the obtained values are in the ballpark of the literature ones and as all of the parameters are considered to be in the triple point region, it can be concluded that the obtained $g(r^*)$ is correct. The obtained diffusion constant ($D^*$) is also within the comparable order of magnitude of the one that is obtained in Rahman's paper. After numerous runs the obtained value is $D^*=0.021\pm 0.004$. 
 ## Method
 | Parameter | Value |
 |---|---|
-| N | $500$ |
+| $N$ | $500$ |
 | $T^*$ | $0.71$ |
 | $\rho^*$ | $0.844$ |
 | $r_c$ | $2.5$ |
