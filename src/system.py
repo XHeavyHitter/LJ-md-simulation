@@ -10,7 +10,7 @@ class System:
         self.N = 4 * n_cell**3
         self.L_star = (self.N / rho_star)**(1/3)
         offsets=[(0, 0, 0), (0.5, 0.5, 0), (0.5, 0, 0.5), (0, 0.5, 0.5)] # In FCC lattice, each unit cell has 4 atoms at these fractional coordinates
-        a=self.L_star/self.n_cell
+        a=self.L_star/self.n_cell # Lattice constant, the distance between adjacent lattice points in the FCC structure
         positions_list=[]
         for i in range(self.n_cell):
             for j in range(self.n_cell):

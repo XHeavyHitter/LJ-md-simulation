@@ -29,6 +29,8 @@ The obtained plot qualitatively matches the ones in Frenkel and Smit's textbook,
 | $L^*$ | $8.40$ |
 | Steps | $50000$ |
 
+$T^*=0.71$ and $\rho^*=0.844$ correspond to real argon's triple point ($T\approx83.8\ \text{K}$, $\rho\approx1.41\ \text{g/cm}^3$), converted to reduced units via $T^*=k_BT/\epsilon$ and $\rho^*=\rho N_A\sigma^3/M$ using argon's standard Lennard-Jones parameters ($\sigma=3.4\ \text{Å}$, $\epsilon/k_B=120\ \text{K}$). $N=500$ was chosen as the nearest FCC-lattice-compatible particle count ($N=4n^3$, $n=5$), large enough to suppress finite-size noise while remaining tractable in pure Python/NumPy. $r_c=2.5\sigma$ is the field-standard cutoff convention, beyond which the LJ potential is negligible. $\Delta t^*$ and step count were chosen to keep energy drift small over the production run while resolving the fastest particle motions.
+
 The force calculation method has three versions. Version 1 calculates forces for each pair of particles using nested loops. Version 2 performs the same calculation but vectorized — computing all pairwise distances and forces at once using NumPy array operations instead of looping. Version 3 divides the system into cells and only calculates forces between particles in the same or neighboring cells, avoiding unnecessary distance checks between far-apart particles.
 
 ![force_methods_benchmark.png](results/force_methods_benchmark.png) ![force_methods_benchmark_table.png](results/force_methods_benchmark_table.png)
@@ -37,3 +39,4 @@ Version 3 is fastest at 500 particles, with version 2 a close second. At smaller
 ## References
 1. Rahman, A. Correlations in the Motion of Atoms in Liquid Argon. Phys. Rev. 1964, 136 (2A), A405–A411.
 2. Frenkel, D.; Smit, B. Understanding Molecular Simulation: From Algorithms to Applications, 2nd ed.; Academic Press: San Diego, 2002.
+3. NIST Chemistry WebBook — Argon triple point data. https://webbook.nist.gov/
