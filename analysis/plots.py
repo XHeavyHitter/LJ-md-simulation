@@ -82,4 +82,4 @@ def trajectory_animation(trajectories, L_star):
         scatter._offsets3d = (positions[:, 0], positions[:, 1], positions[:, 2])
         return scatter,
     ani = FuncAnimation(fig, update, frames=len(frames), interval=50, blit=False)
-    ani.save('results/trajectory.gif', writer='pillow', fps=20)
+    ani.save('results/trajectory.mp4', writer='ffmpeg', fps=20)
