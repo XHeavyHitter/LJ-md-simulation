@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 import numpy as np
 def energy_vs_time (total_energies, prod_Enrg, step_count, sample_interval, dt):
     plt.figure()
@@ -67,3 +68,18 @@ def benchmark_table(results):
     column_labels = ["N", "v1-v2 diff", "v1-v3 diff", "v2-v3 diff"]
     plt.table(cellText=table_data, colLabels=column_labels, loc='center')
     plt.savefig('results/force_methods_benchmark_table.png')
+def trajectory_animation(trajectories, L_star):
+    frames = trajectories % L_star
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    ax.set_xlim(0, L_star)
+    ax.set_ylim(0, L_star)
+    ax.set_zlim(0, L_star)
+    ax.set_box_aspect([1, 1, 1])
+    scatter = ax.scatter([], [], [], s=15)
+    def update(frame_index):
+        positions = frames[frame_index]
+        scatter._offsets3d = (positions[:, 0], positions[:, 1], positions[:, 2])
+        return scatter,
+    ani = FuncAnimation(fig, update, frames=len(frames), interval=50, blit=False)
+    ani.save('results/trajectory.gif', writer='pillow', fps=20)
